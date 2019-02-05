@@ -50,11 +50,10 @@ export default {
     ...mapActions('article', ['putPublicArticleTitle', 'gotArticleData', 'putPublicArticleBody']),
     async updateArticleTitle() {
       if (!this.gotArticleData) return
-      const { title, thumbnail } = this
+      const { title } = this
       const { articleId } = this.$route.params
-      const article = { title }
-      if (thumbnail !== '') article.eye_catch_url = thumbnail
-      await this.putPublicArticleTitle({ article, articleId })
+      const articleTitle = { title }
+      await this.putPublicArticleTitle({ articleTitle, articleId })
     }
   }
 }

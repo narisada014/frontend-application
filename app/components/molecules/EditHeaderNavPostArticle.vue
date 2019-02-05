@@ -48,6 +48,7 @@ import { mapGetters, mapActions } from 'vuex'
 import { ADD_TOAST_MESSAGE } from 'vuex-toast'
 import AppButton from '../atoms/AppButton'
 import TagsInputForm from '../molecules/TagsInputForm'
+import { isV2 } from '~/utils/article'
 
 export default {
   components: {
@@ -122,11 +123,36 @@ export default {
           location.href.includes('/me/articles/draft') ||
           location.href.includes('/me/articles/new')
         ) {
-          await this.putDraftArticle({ article, articleId })
+          // 変更ここから
+          const draftArticle = await this.$axios.$get(`/me/articles/${articleId}/drafts`)
+          if (isV2(draftArticle)) {
+            const articleTitle = { title }
+            const articleBody = { body, overview }
+            console.log(this.thumbnail)
+            if (this.thumbnail !== '') {
+              articleBody.eye_catch_url = this.thumbnail
+            }
+            await this.putDraftArticleTitle({articleTitle, articleId})
+            await this.putDraftArticleBody({articleBody, articleId})
+          } else {
+            await this.putDraftArticle({ article, articleId })
+          }
           await this.publishDraftArticle({ articleId, topic: topicType, tags })
         } else if (location.href.includes('/me/articles/public')) {
-          await this.putPublicArticle({ article, articleId })
+          const publicArticle = await this.$axios.$get(`/me/articles/${articleId}/public/edit`)
+          if (isV2(publicArticle)) {
+            const articleTitle = { title }
+            const articleBody = { body, overview }
+            if (this.thumbnail !== '') {
+              articleBody.eye_catch_url = this.thumbnail
+            }
+            await this.putPublicArticleTitle({articleTitle, articleId})
+            await this.putPublicArticleBody({articleBody, articleId})
+          } else {
+            await this.putPublicArticle({ article, articleId })
+          }
           await this.republishPublicArticle({ articleId, topic: topicType, tags })
+          // 変更ここまで
         }
         this.$router.push(`/${this.currentUserInfo.user_id}/articles/${articleId}`)
         this.sendNotification({ text: '記事を公開しました' })
@@ -186,7 +212,11 @@ export default {
       'setIsSaving',
       'getTopics',
       'resetArticleTopic',
-      'setArticleTopic'
+      'setArticleTopic',
+      'putDraftArticleTitle',
+      'putDraftArticleBody',
+      'putPublicArticleTitle',
+      'putPublicArticleBody'
     ]),
     ...mapActions('user', ['setFirstProcessModal', 'setFirstProcessCreatedArticleModal'])
   },
